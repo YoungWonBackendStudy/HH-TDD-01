@@ -1,4 +1,4 @@
-package io.hhplus.tdd.point;
+package io.hhplus.tdd.point.domain;
 
 import java.util.List;
 
@@ -6,28 +6,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import io.hhplus.tdd.database.PointHistoryTable;
-import io.hhplus.tdd.database.UserPointTable;
-
 @Service
 public class PointService {
     private static final Logger log = LoggerFactory.getLogger(PointService.class);
-    PointHistoryTable pointHistoryTable;
-    UserPointTable userPointTable;
+    PointHistoryRepository pointHistoryRepository;
+    UserPointRepository userPointRepository;
 
     private final UserPointLock userLock = new UserPointLock();
     
-    public PointService(PointHistoryTable pointHistoryTable, UserPointTable userPointTable) {
-        this.pointHistoryTable = pointHistoryTable;
-        this.userPointTable = userPointTable;
+    public PointService(PointHistoryRepository pointHistoryRepository, UserPointRepository userPointRepository) {
+        this.pointHistoryRepository = pointHistoryRepository;
+        this.userPointRepository = userPointRepository;
     }
 
     public UserPoint getUserPoint(long userId) {
-        return userPointTable.selectById(userId);
+        return userPointRepository.findById(userId);
     }
 
     public List<PointHistory> getPointHistory(long userId) {
-        return pointHistoryTable.selectAllByUserId(userId);
+        return pointHistoryRepository.findPointHistoriesByUserId(userId);
     }
 
     public UserPoint chargeUserPoint(long userId, long chargePoint){
@@ -43,10 +40,10 @@ public class PointService {
 
         UserPoint chargeRes;
         try{
-            long currentPoint = userPointTable.selectById(userId).point();
-            chargeRes = userPointTable.insertOrUpdate(userId, currentPoint + chargePoint);
+            long currentPoint = userPointRepository.findById(userId).point();
+            chargeRes = userPointRepository.save(userId, currentPoint + chargePoint);
     
-            pointHistoryTable.insert(userId, chargePoint, TransactionType.CHARGE, System.currentTimeMillis());
+            pointHistoryRepository.save(userId, chargePoint, TransactionType.CHARGE, System.currentTimeMillis());
         } finally {
             userLock.releaseLock(userId);
         }
@@ -67,11 +64,11 @@ public class PointService {
 
         UserPoint useRes;
         try{
-            long currentPoint = userPointTable.selectById(userId).point();
+            long currentPoint = userPointRepository.findById(userId).point();
             if(currentPoint < usePoint)
                 throw new RuntimeException("포인트가 부족합니다.");
-            useRes = userPointTable.insertOrUpdate(userId, currentPoint - usePoint);
-            pointHistoryTable.insert(userId, usePoint, TransactionType.USE, System.currentTimeMillis());
+            useRes = userPointRepository.save(userId, currentPoint - usePoint);
+            pointHistoryRepository.save(userId, usePoint, TransactionType.USE, System.currentTimeMillis());
         } finally{
             userLock.releaseLock(userId);
         }

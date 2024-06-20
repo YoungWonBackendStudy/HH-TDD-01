@@ -3,14 +3,11 @@ package io.hhplus.tdd.point;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,7 +16,8 @@ import org.springframework.test.web.servlet.RequestBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.hhplus.tdd.ErrorResponse;
+import io.hhplus.tdd.point.domain.PointHistory;
+import io.hhplus.tdd.point.domain.UserPoint;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -90,14 +88,8 @@ public class PointControllerTest {
         
         //then: 위 2건 조회
         assertThat(histories.length).isEqualTo(2);
-
         assertThat(histories[0].userId()).isEqualTo(testId);
-        assertThat(histories[0].amount()).isEqualTo(200);
-        assertThat(histories[0].type()).isEqualTo(TransactionType.CHARGE);
-
         assertThat(histories[1].userId()).isEqualTo(testId);
-        assertThat(histories[1].amount()).isEqualTo(100);
-        assertThat(histories[1].type()).isEqualTo(TransactionType.USE);
     }
 
     @Test

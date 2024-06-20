@@ -2,7 +2,11 @@ package io.hhplus.tdd.point;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -12,20 +16,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.hhplus.tdd.database.PointHistoryTable;
-import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.point.domain.PointHistory;
+import io.hhplus.tdd.point.domain.PointHistoryRepository;
+import io.hhplus.tdd.point.domain.PointService;
+import io.hhplus.tdd.point.domain.TransactionType;
+import io.hhplus.tdd.point.domain.UserPoint;
+import io.hhplus.tdd.point.domain.UserPointRepository;
 
 public class PointServiceUnitTest {
     PointService pointService;
-    PointHistoryTable mockPointHistory;
-    UserPointTable mockUserPointTable;
+    PointHistoryRepository mockPointHistoryRepository;
+    UserPointRepository mockUserPointRepository;
 
     //mock Table Injection
     @BeforeEach
     void setup() {
-        mockPointHistory = mock(PointHistoryTable.class);
-        mockUserPointTable = mock(UserPointTable.class);
-        pointService = new PointService(mockPointHistory, mockUserPointTable);
+        mockPointHistoryRepository = mock(PointHistoryRepository.class);
+        mockUserPointRepository = mock(UserPointRepository.class);
+        pointService = new PointService(mockPointHistoryRepository, mockUserPointRepository);
     }
 
     @Test
@@ -33,7 +41,7 @@ public class PointServiceUnitTest {
     void testGetPoint() {
         //given: 200포인트를 소유한 사용자
         UserPoint user = new UserPoint(0, 200, 0);
-        when(mockUserPointTable.selectById(user.id()))
+        when(mockUserPointRepository.findById(user.id()))
             .thenReturn(user);
         
         //when: 포인트를 조회할 때
@@ -50,10 +58,10 @@ public class PointServiceUnitTest {
     void testChargePoint() {
         //given: 200포인트를 소유한 사용자
         UserPoint user = new UserPoint(0, 200, 0);
-        when(mockUserPointTable.selectById(user.id()))
+        when(mockUserPointRepository.findById(user.id()))
             .thenReturn(user);
 
-        when(mockUserPointTable.insertOrUpdate(user.id(), 300))
+        when(mockUserPointRepository.save(user.id(), 300))
             .thenReturn(new UserPoint(user.id(), 300, 0)); 
         
         //when: 100 포인트를 충전할 때
@@ -72,9 +80,9 @@ public class PointServiceUnitTest {
     void testUsePoint() {
         //given: 200포인트를 소유한 사용자
         UserPoint user = new UserPoint(0, 200, 0);
-        when(mockUserPointTable.selectById(user.id()))
+        when(mockUserPointRepository.findById(user.id()))
             .thenReturn(user);
-        when(mockUserPointTable.insertOrUpdate(user.id(), 100))
+        when(mockUserPointRepository.save(user.id(), 100))
             .thenReturn(new UserPoint(user.id(), 100, 0)); 
         
         //when: 100 포인트를 사용할 때
@@ -87,6 +95,25 @@ public class PointServiceUnitTest {
     }
 
     @Test
+    @DisplayName("포인트 충전/이용 내역 추가 테스트") 
+    void testSavePointHistory() {
+        //given: 200포인트를 소유한 사용자
+        UserPoint user = new UserPoint(0, 3000, 0);
+        when(mockUserPointRepository.findById(user.id()))
+            .thenReturn(user);
+        
+        //when: "300 포인트 충전", "200포인트 사용"을 진행했을 때
+        pointService.chargeUserPoint(user.id(), 300);
+        pointService.useUserPoint(user.id(), 200);
+        
+        //then: 본인의 포인트 충전/사용 이력 2건 조회
+        verify(mockPointHistoryRepository, times(1))
+            .save(eq(user.id()), eq(300l), eq(TransactionType.CHARGE), anyLong());
+        verify(mockPointHistoryRepository, times(1))
+            .save(eq(user.id()), eq(200l), eq(TransactionType.USE), anyLong());
+    }
+
+    @Test
     @DisplayName("포인트 충전/이용 내역 조회 테스트") 
     void testGetPointHistory() {
         //given: 2건의 포인트 충전/사용 이력이 있는 사용자
@@ -95,7 +122,7 @@ public class PointServiceUnitTest {
         userPointHistory.add(new PointHistory(0, user.id(), 100, TransactionType.CHARGE, 0));
         userPointHistory.add(new PointHistory(2, user.id(), 200, TransactionType.USE, 0));
 
-        when(mockPointHistory.selectAllByUserId(0))
+        when(mockPointHistoryRepository.findPointHistoriesByUserId(0))
             .thenReturn(userPointHistory);
         
         //when: 포인트 충전/사용 이력을 조회할 때
@@ -144,7 +171,7 @@ public class PointServiceUnitTest {
     void testPointLack() {
         //given: 200 포인트를 소유한 사용자
         UserPoint user = new UserPoint(0, 200, 0);
-        when(mockUserPointTable.selectById(user.id()))
+        when(mockUserPointRepository.findById(user.id()))
             .thenReturn(user);
 
         //when: 사용자가 201 포인트를 사용하려고 할 때

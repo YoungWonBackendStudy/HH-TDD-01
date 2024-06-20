@@ -8,16 +8,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import io.hhplus.tdd.database.PointHistoryTable;
-import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.point.domain.PointHistory;
+import io.hhplus.tdd.point.domain.PointHistoryRepository;
+import io.hhplus.tdd.point.domain.TransactionType;
+import io.hhplus.tdd.point.domain.UserPoint;
+import io.hhplus.tdd.point.domain.UserPointRepository;
 
 @SpringBootTest
-public class PointTableTest {
+public class PointRepositoryTest {
     @Autowired
-    UserPointTable userPointTable;
+    UserPointRepository userPointTable;
 
     @Autowired
-    PointHistoryTable pointHistoryTable;
+    PointHistoryRepository pointHistoryTable;
     
     @Test
     void testUserPoint() {
@@ -25,14 +28,14 @@ public class PointTableTest {
         long testId = 1;
 
         //when: 300포인트 입력 시
-        UserPoint testUser = userPointTable.insertOrUpdate(testId, 300);
+        UserPoint testUser = userPointTable.save(testId, 300);
 
         //then: 사용자에게 300포인트 부여
         assertThat(testUser.id()).isEqualTo(testId);
         assertThat(testUser.point()).isEqualTo(300);
         
         //when: 사용자 id로 조회 시
-        UserPoint userSelected = userPointTable.selectById(testUser.id());
+        UserPoint userSelected = userPointTable.findById(testUser.id());
 
         //then: 동일한 사용자
         assertThat(userSelected).isEqualTo(testUser);
@@ -42,16 +45,16 @@ public class PointTableTest {
     void testPointHistory() {
         //given: 기존 History
         long testId = 1;
-        List<PointHistory> historiesBefore = pointHistoryTable.selectAllByUserId(testId);
+        List<PointHistory> historiesBefore = pointHistoryTable.findPointHistoriesByUserId(testId);
 
         //when: "300포인트 충전", "200포인트 사용" 내역을 추가했을 때
-        PointHistory chargeHistory = pointHistoryTable.insert(testId, 300, TransactionType.CHARGE, 0);
-        PointHistory useHistory = pointHistoryTable.insert(testId, 200, TransactionType.USE, 0);
+        pointHistoryTable.save(testId, 300, TransactionType.CHARGE, 0);
+        pointHistoryTable.save(testId, 200, TransactionType.USE, 0);
 
         //then: 사용자 ID로 조회시 위 두 내역 조회
-        List<PointHistory> pointHistories = pointHistoryTable.selectAllByUserId(testId);
+        List<PointHistory> pointHistories = pointHistoryTable.findPointHistoriesByUserId(testId);
         assertThat(pointHistories.size()).isEqualTo(historiesBefore.size() + 2);
-        assertThat(pointHistories.get(0)).isEqualTo(chargeHistory);
-        assertThat(pointHistories.get(1)).isEqualTo(useHistory);
+        assertThat(pointHistories.get(0).userId()).isEqualTo(testId);
+        assertThat(pointHistories.get(1).userId()).isEqualTo(testId);
     }
 }

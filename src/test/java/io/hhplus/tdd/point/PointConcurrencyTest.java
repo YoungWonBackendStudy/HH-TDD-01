@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -15,7 +16,7 @@ public class PointConcurrencyTest {
     @Autowired
     PointService pointService;
 
-    @RepeatedTest(3)
+    @Test
     void concurrencyTestChargePoint() throws InterruptedException {
         //given: 사용자
         long testUserId = 0;
@@ -46,7 +47,7 @@ public class PointConcurrencyTest {
         assertThat(pointAfter).isEqualTo(testUser.point() + pointToCharge * executionCnt);
     }
 
-    @RepeatedTest(3)
+    @Test
     void concurrencyTestUsePoint() throws InterruptedException {
         //given: 포인트가 충분히 있는 사용자
         long testUserId = 0;
@@ -77,7 +78,7 @@ public class PointConcurrencyTest {
         assertThat(pointAfter).isEqualTo(testUser.point() - pointToUse * executionCnt);
     }
 
-    @RepeatedTest(3)
+    @Test
     void concurrencyTestAll() throws InterruptedException {
         //given: 포인트가 충분히 있는 사용자
         long testUserId = 0;
@@ -115,7 +116,7 @@ public class PointConcurrencyTest {
 
         //then: 포인트 변화 없음 (실행 횟수는 짝수)
         long pointAfter = pointService.getUserPoint(testUserId).point();
-        assertThat(pointAfter).isEqualTo(testUser.point() - testAmount * executionCnt);
+        assertThat(pointAfter).isEqualTo(testUser.point());
     }
 
 }

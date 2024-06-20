@@ -28,7 +28,7 @@ public class PointHistoryIntegTest {
 
         //then: 본인의 포인트 충전/사용 내역 2건 조회
         List<PointHistory> afterHis = pointService.getPointHistory(testId);
-        assertThat(afterHis.size()).isEqualTo(beforeHis.size() + 3);
+        assertThat(afterHis.size()).isEqualTo(beforeHis.size() + 2);
 
         assertThat(afterHis.get(0).userId()).isEqualTo(testId);
         assertThat(afterHis.get(0).amount()).isEqualTo(300);

@@ -154,6 +154,6 @@ public class PointServiceUnitTest {
                 pointService.useUserPoint(user.id(), testAmount);
             })
             .isInstanceOf(RuntimeException.class)
-            .hasMessage("사용 포인트가 부족합니다.");
+            .hasMessage("포인트가 부족합니다.");
     }
 }

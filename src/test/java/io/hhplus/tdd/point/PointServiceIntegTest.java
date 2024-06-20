@@ -1,7 +1,6 @@
 package io.hhplus.tdd.point;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
@@ -10,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-public class PointHistoryIntegTest {
+public class PointServiceIntegTest {
     @Autowired
     PointService pointService;
 
@@ -37,5 +36,34 @@ public class PointHistoryIntegTest {
         assertThat(afterHis.get(1).userId()).isEqualTo(testId);
         assertThat(afterHis.get(1).amount()).isEqualTo(100);
         assertThat(afterHis.get(1).type()).isEqualTo(TransactionType.USE);
+    }
+
+    @Test
+    void testUserPoint() {
+        //given
+        long testId = 0;
+        
+        //when: 유저 조회할 때
+        UserPoint testUser = pointService.getUserPoint(testId);
+
+        //then: 동일한 ID의 유저 조회
+        assertThat(testUser.id()).isEqualTo(testId);
+
+        //when: 300포인트를 충전할 때
+        pointService.chargeUserPoint(testUser.id(), 300);
+
+        //then: 테스트 유저에게 300포인트 추가
+        UserPoint chargeRes = pointService.getUserPoint(testId);
+        assertThat(chargeRes.id()).isEqualTo(testId);
+        assertThat(chargeRes.point()).isEqualTo(testUser.point() + 300);
+
+        //when: 200포인트를 사용할 때
+        pointService.useUserPoint(testUser.id(), 200);
+
+        //then: 테스트 유저에게 200포인트 차감
+        UserPoint useRes = pointService.getUserPoint(testId);
+        assertThat(useRes.id()).isEqualTo(testId);
+        assertThat(useRes.point()).isEqualTo(chargeRes.point() - 200);
+
     }
 }

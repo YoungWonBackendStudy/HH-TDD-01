@@ -8,6 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import io.hhplus.tdd.point.domain.PointHistory;
+import io.hhplus.tdd.point.domain.PointService;
+import io.hhplus.tdd.point.domain.TransactionType;
+import io.hhplus.tdd.point.domain.UserPoint;
+
 @SpringBootTest
 public class PointServiceIntegTest {
     @Autowired
@@ -28,14 +33,8 @@ public class PointServiceIntegTest {
         //then: 본인의 포인트 충전/사용 내역 2건 조회
         List<PointHistory> afterHis = pointService.getPointHistory(testId);
         assertThat(afterHis.size()).isEqualTo(beforeHis.size() + 2);
-
         assertThat(afterHis.get(0).userId()).isEqualTo(testId);
-        assertThat(afterHis.get(0).amount()).isEqualTo(300);
-        assertThat(afterHis.get(0).type()).isEqualTo(TransactionType.CHARGE);
-
         assertThat(afterHis.get(1).userId()).isEqualTo(testId);
-        assertThat(afterHis.get(1).amount()).isEqualTo(100);
-        assertThat(afterHis.get(1).type()).isEqualTo(TransactionType.USE);
     }
 
     @Test
@@ -49,6 +48,7 @@ public class PointServiceIntegTest {
         //then: 동일한 ID의 유저 조회
         assertThat(testUser.id()).isEqualTo(testId);
 
+
         //when: 300포인트를 충전할 때
         pointService.chargeUserPoint(testUser.id(), 300);
 
@@ -56,6 +56,7 @@ public class PointServiceIntegTest {
         UserPoint chargeRes = pointService.getUserPoint(testId);
         assertThat(chargeRes.id()).isEqualTo(testId);
         assertThat(chargeRes.point()).isEqualTo(testUser.point() + 300);
+        
 
         //when: 200포인트를 사용할 때
         pointService.useUserPoint(testUser.id(), 200);

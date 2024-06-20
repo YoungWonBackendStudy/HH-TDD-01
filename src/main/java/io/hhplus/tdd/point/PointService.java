@@ -14,6 +14,8 @@ public class PointService {
     private static final Logger log = LoggerFactory.getLogger(PointService.class);
     PointHistoryTable pointHistoryTable;
     UserPointTable userPointTable;
+
+    private final UserPointLock userLock = new UserPointLock();
     
     public PointService(PointHistoryTable pointHistoryTable, UserPointTable userPointTable) {
         this.pointHistoryTable = pointHistoryTable;
@@ -32,10 +34,23 @@ public class PointService {
         if(chargePoint <= 0) 
             throw new RuntimeException("0이하의 포인트는 충전할 수 없습니다.");
 
-        long currentPoint = userPointTable.selectById(userId).point();
-        UserPoint chargeRes = userPointTable.insertOrUpdate(userId, currentPoint + chargePoint);
+        try {
+            userLock.waitForLock(userId);
+        } catch (Exception e) {
+            log.error("userLock error", e);
+            throw new RuntimeException(e.getMessage());
+        }
 
-        pointHistoryTable.insert(userId, chargePoint, TransactionType.CHARGE, System.currentTimeMillis());
+        UserPoint chargeRes;
+        try{
+            long currentPoint = userPointTable.selectById(userId).point();
+            chargeRes = userPointTable.insertOrUpdate(userId, currentPoint + chargePoint);
+    
+            pointHistoryTable.insert(userId, chargePoint, TransactionType.CHARGE, System.currentTimeMillis());
+        } finally {
+            userLock.releaseLock(userId);
+        }
+
         return chargeRes;
     }
 
@@ -43,13 +58,24 @@ public class PointService {
         if(usePoint <= 0) 
             throw new RuntimeException("0보다 적은 포인트는 사용할 수 없습니다.");
         
-        long currentPoint = userPointTable.selectById(userId).point();
-        if(currentPoint < usePoint)
-            throw new RuntimeException("사용 포인트가 부족합니다.");
+        try {
+            userLock.waitForLock(userId);
+        } catch (Exception e) {
+            log.error("userLock error", e);
+            throw new RuntimeException(e.getMessage());
+        }
 
-        UserPoint useRes = userPointTable.insertOrUpdate(userId, currentPoint - usePoint);
-
-        pointHistoryTable.insert(userId, usePoint, TransactionType.USE, System.currentTimeMillis());
+        UserPoint useRes;
+        try{
+            long currentPoint = userPointTable.selectById(userId).point();
+            if(currentPoint < usePoint)
+                throw new RuntimeException("포인트가 부족합니다.");
+            useRes = userPointTable.insertOrUpdate(userId, currentPoint - usePoint);
+            pointHistoryTable.insert(userId, usePoint, TransactionType.USE, System.currentTimeMillis());
+        } finally{
+            userLock.releaseLock(userId);
+        }
+        
         return useRes;
     }
 }

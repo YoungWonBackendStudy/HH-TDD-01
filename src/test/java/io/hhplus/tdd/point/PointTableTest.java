@@ -40,8 +40,9 @@ public class PointTableTest {
 
     @Test
     void testPointHistory() {
-        //given
+        //given: 기존 History
         long testId = 1;
+        List<PointHistory> historiesBefore = pointHistoryTable.selectAllByUserId(testId);
 
         //when: "300포인트 충전", "200포인트 사용" 내역을 추가했을 때
         PointHistory chargeHistory = pointHistoryTable.insert(testId, 300, TransactionType.CHARGE, 0);
@@ -49,7 +50,7 @@ public class PointTableTest {
 
         //then: 사용자 ID로 조회시 위 두 내역 조회
         List<PointHistory> pointHistories = pointHistoryTable.selectAllByUserId(testId);
-        assertThat(pointHistories.size()).isEqualTo(2);
+        assertThat(pointHistories.size()).isEqualTo(historiesBefore.size() + 2);
         assertThat(pointHistories.get(0)).isEqualTo(chargeHistory);
         assertThat(pointHistories.get(1)).isEqualTo(useHistory);
     }
